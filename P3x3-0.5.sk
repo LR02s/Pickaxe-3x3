@@ -1,7 +1,7 @@
 # CONFIG
 options:
     version: 0.5
-    nameEnchant: <bold><#B8311A>OP <#6D3CC2>PEAK</bold>
+    nameEnchant: &f[&6&lOP&f] &7Peak
     realisticDurability: false
     showParticles: true
 # SCRIPT
@@ -20,7 +20,7 @@ command /p3e <text>:
             if lore of player's tool contains "{@nameEnchant}":
                 send "&cThis item already has PEAK."
                 stop
-            add "{@nameEnchant}" to lore of player's tool
+            add formatted "{@nameEnchant}" to lore of player's tool
             send "&aPEAK enchant applied."
             stop
 
