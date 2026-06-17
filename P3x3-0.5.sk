@@ -25,7 +25,7 @@ command /p3e <text>:
             stop
 
         if arg-1 is "version":
-            send "&ePeak Enchant &7- &fv{@version}"
+            send "&6Peak Enchant &7- &fv{@version}"
             stop
 
         send "&fUsage: /p3e enchant|version"
@@ -56,7 +56,7 @@ on break:
                         make 5 of dust using dustOption(rgb(255, 140, 0), 0.8) at {_ploc}
                     break {_target} naturally
                     if {@realisticDurability} is true:
-                        add 1 to durability of player's tool
+                        remove 1 from durability of player's tool
 # TABCOMPLETE
 on tab complete of "/p3e":
     set tab completions for position 1 to "enchant" and "version"
