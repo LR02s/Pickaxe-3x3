@@ -1,0 +1,75 @@
+# CONFIG
+options:
+    version: 0.6
+    nameEnchant: &f[&6&lOP&f] &7Peak
+    realisticDurability: false
+    showParticles: true
+    enableCooldown: false
+    peakCooldown: 5 seconds
+    restrictSpawnWorld: false
+    spawnWorldName: example_world
+# SCRIPT
+command /p3e <text>:
+    permission: p3e.mod
+    permission message: &4Command not allowed!.
+    usage: &4Use> /p3e <enchant|version>
+    trigger:
+        if arg-1 is "enchant":
+            if player's tool is air:
+                send "&cYou must be holding an item."
+                stop
+            if player's tool is not a pickaxe:
+                send "&cYou must be holding a pickaxe."
+                stop
+            if lore of player's tool contains "{@nameEnchant}":
+                send "&cThis item already has PEAK."
+                stop
+            add formatted "{@nameEnchant}" to lore of player's tool
+            send "&aPEAK enchant applied."
+            stop
+
+        if arg-1 is "version":
+            send "&6Peak Enchant &7- &fv{@version}"
+            stop
+
+        send "&fUsage: /p3e enchant|version"
+on break:
+    if player's tool is not a pickaxe:
+        stop
+    if lore of player's tool doesn't contain "{@nameEnchant}":
+        stop
+    if {@restrictSpawnWorld} is true:
+        if "%world of event-block%" is "{@spawnWorldName}":
+            stop
+    if {@enableCooldown} is true:
+        if {p3e.cooldown::%player's uuid%} is set:
+            if difference between {p3e.cooldown::%player's uuid%} and now is smaller than {@peakCooldown}:
+                stop
+        set {p3e.cooldown::%player's uuid%} to now
+
+    set {_bx} to x-coordinate of event-block
+    set {_by} to y-coordinate of event-block
+    set {_bz} to z-coordinate of event-block
+    set {_bw} to world of event-block
+    loop integers from -1 to 1:
+        set {_dx} to loop-integer
+        loop integers from -1 to 1:
+            set {_dy} to loop-integer-2
+            loop integers from -1 to 1:
+                set {_dz} to loop-integer-3
+                if {_dx} is 0:
+                    if {_dy} is 0:
+                        if {_dz} is 0:
+                            continue
+
+                set {_ploc} to location({_bx} + {_dx}, {_by} + {_dy}, {_bz} + {_dz}, {_bw})
+                set {_target} to block at {_ploc}
+                if {_target} is not air:
+                    if {@showParticles} is true:
+                        make 5 of dust using dustOption(rgb(255, 140, 0), 0.8) at {_ploc}
+                    break {_target} naturally
+                    if {@realisticDurability} is true:
+                        remove 1 from durability of player's tool
+# TABCOMPLETE
+on tab complete of "/p3e":
+    set tab completions for position 1 to "enchant" and "version"
