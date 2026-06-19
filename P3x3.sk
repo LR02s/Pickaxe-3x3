@@ -97,23 +97,20 @@ on break:
                         remove 1 from durability of player's tool
     delete {__p3e::%uuid of player%}
 # ANVIL - SYSTEM
-on inventory click:
-    if event-inventory is not an anvil inventory:
-        stop
+on anvil prepare:
     if {@bookEnchant} is false:
-        stop 
-    if index of event-slot is not 2:
         stop
-    set {_left} to slot 0 of event-inventory
-    set {_right} to slot 1 of event-inventory
-    if {_left} is not a pickaxe:
+    if slot 0 of event-inventory is not a pickaxe:
         stop
-    if name of {_right} is not formatted "{@nameBook}":
+    if name of slot 1 of event-inventory is not formatted "{@nameBook}":
         stop
-    wait 1 tick
-    set {_result} to slot 2 of event-inventory
+    if lore of slot 0 of event-inventory contains formatted "{@nameEnchant}":
+        stop
+    set {_result} to slot 0 of event-inventory
     add formatted "{@nameEnchant}" to lore of {_result}
-    set slot 2 of event-inventory to {_result}
+    set event-slot to {_result}
+    set repair cost of event-inventory to 0
 # TABCOMPLETE
 on tab complete of "/p3e":
     set tab completions for position 1 to "enchant", "book" and "version"
+# everything for the moment
