@@ -5,7 +5,7 @@ options:
     bookEnchant: true
     nameBook: &fPeak 3x3
     realisticDurability: false
-    blocksBlackList: bedrock and spawner
+    blocksBlackList: bedrock
     showParticles: true
     enableCooldown: false
     peakCooldown: 5 seconds
@@ -52,7 +52,7 @@ function isPeakPick(p: player) :: boolean:
     if lore of tool of {_p} doesn't contain "{@nameEnchant}":
         return false
     return true
-# PEAK FUNCION
+# PEAK FUNCTION
 on break:
     if isPeakPick(player) is false:
         stop
