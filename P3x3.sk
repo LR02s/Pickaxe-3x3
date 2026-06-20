@@ -9,8 +9,8 @@ options:
     showParticles: true
     enableCooldown: false
     peakCooldown: 5 seconds
-    restrictSpawnWorld: false
-    spawnWorldName: example_world
+    restrictWorlds: false
+    BlackListWorlds: example_world
 # SCRIPT
 command /p3e <text>:
     permission: p3e.mod
