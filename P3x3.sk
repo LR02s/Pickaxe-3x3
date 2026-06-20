@@ -59,8 +59,8 @@ on break:
     if {__p3e::%uuid of player%} is set:
         stop
     set {__p3e::%uuid of player%} to true
-    if {@restrictSpawnWorld} is true:
-        if "%world of event-block%" is "{@spawnWorldName}":
+    if {@restrictWorlds} is true:
+        if "%world of event-block%" is "{@BlackListWorlds}":
             delete {__p3e::%uuid of player%}
             stop
     if {@enableCooldown} is true:
