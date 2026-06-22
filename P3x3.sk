@@ -60,6 +60,9 @@ command /p3esecene [<player>]:
     permission message: &4Command not allowed!.
     usage: &4Use> /p3esecene <player>
     trigger:
+        if {@scene} is false:
+            send "{@prefix} &cThe scenes option is disabled" to player
+            stop
         if arg-1 is set:
             set {_target} to arg-1
         else:
@@ -101,8 +104,6 @@ function playEnchantScene(p: player, result: item):
     set {_cy} to y-coordinate of {_loc}
     set {_cz} to z-coordinate of {_loc}
     set {_w} to world of {_loc}
-    set walk speed of {_p} to 0
-    set {p3e_freeze::%uuid of {_p}%} to true
     set {_t} to 0
     set {_mod_count} to 0
     loop 40 times:
@@ -161,8 +162,6 @@ function playEnchantScene(p: player, result: item):
     give {_result} to {_p}
     wait 3 ticks
     kill {_hd}
-    set walk speed of {_p} to 0.2
-    delete {p3e_freeze::%uuid of {_p}%}
 # PEAK FUNCTION
 on break:
     if isPeakPick(player) is false:
