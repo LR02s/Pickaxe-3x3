@@ -2,7 +2,7 @@
 
 Lightweight Skript-based plugin that adds a custom pickaxe enchantment called **PEAK**. When a player breaks a block with an enchanted pickaxe, the surrounding blocks in a 3x3x3 area are broken automatically as well, making mining faster without needing tools like WorldEdit.
 
-Built entirely with [Skript](https://github.com/SkriptLang/Skript) and [SkBee](https://github.com/ShaneBeee/SkBee) — no compiled plugin, no extra dependencies.
+Built entirely with [Skript](https://github.com/SkriptLang/Skript), [SkBee](https://github.com/ShaneBeee/SkBee) and [PoaSK](https://www.spigotmc.org/resources/poask-skript-addon.104512/)— no compiled plugin, no extra dependencies.
 
 ## Requirements
 
@@ -22,6 +22,8 @@ Built entirely with [Skript](https://github.com/SkriptLang/Skript) and [SkBee](h
 | `/p3e enchant` | Applies the PEAK enchant to the pickaxe you're holding | `p3e.mod` |
 | `/p3e book` | Gives you a Peak enchantment book (if enabled) | `p3e.mod` |
 | `/p3e version` | Shows the current plugin version | `p3e.mod` |
+| `/p3e wiki` | To see the complete wiki for the full script | `p3e.mod` |
+| `/p3escene` | Play enchantment animation and enchant | `p3e.mod` |
 
 Tab completion is included for all subcommands.
 
