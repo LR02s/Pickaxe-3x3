@@ -1,6 +1,7 @@
 # CONFIG
 options:
-    version: 2.0
+    version: 2.5
+    prefix: &6&l[P3X3]&7>>
     nameEnchant: &f[&6&lOP&f] &7Peak
     bookEnchant: true
     nameBook: &fPeak 3x3
@@ -14,6 +15,8 @@ options:
 # CUSTOM MODEL
     useCustomModelData: false
     customModelDataID: 1001
+# SCENE ENCHANTMENT
+    scene: false
 # SCRIPT
 command /p3e <text>:
     permission: p3e.mod
@@ -22,41 +25,144 @@ command /p3e <text>:
     trigger:
         if arg-1 is "enchant":
             if player's tool is air:
-                send "&cYou must be holding an item."
+                send "{@prefix} &cYou must be holding an item." to player
                 stop
             if player's tool is not a pickaxe:
-                send "&cYou must be holding a pickaxe."
+                send "{@prefix} &cYou must be holding a pickaxe." to player
                 stop
-            if lore of player's tool contains "{@nameEnchant}":
-                send "&cThis item already has PEAK."
+            if lore of player's tool contains formatted "{@nameEnchant}":
+                send "{@prefix} &cThis item already has PEAK." to player
                 stop
             add formatted "{@nameEnchant}" to lore of player's tool
             if {@useCustomModelData} is true:
                 set custom model data of player's tool to {@customModelDataID}
-            send "&aPEAK enchant applied."
+            send "{@prefix} &aPEAK enchant applied." to player
             stop
         if arg-1 is "book":
             if {@bookEnchant} is false:
-                send "&4The book system is disabled." to player
+                send "{@prefix} &cThe book system is disabled." to player
                 stop
             set {_book} to enchanted book
             set name of {_book} to formatted "{@nameBook}"
             give {_book} to player
-            send "&6[Peak] &fgiven book!"
+            send "{@prefix} &fgiven book!" to player
+            stop
+        if arg-1 is "wiki":
+            send "{@prefix} <link:https://github.com/LR02s/Pickaxe-3x3>&6click to view wiki!" to player
             stop
         if arg-1 is "version":
-            send "&6Peak Enchant &7- &fv{@version}"
+            send "{@prefix} &7Peak Enchant &7- &fv{@version}" to player
             stop
-        send "&fUsage: /p3e enchant|book|version"
-# FUNCTION
+        send "&8Usage: /p3e enchant|book|wiki|version"
+# COMMAND - SCENE
+command /p3esecene [<player>]:
+    permission: p3e.mod
+    permission message: &4Command not allowed!.
+    usage: &4Use> /p3esecene <player>
+    trigger:
+        if arg-1 is set:
+            set {_target} to arg-1
+        else:
+            set {_target} to player
+        if tool of {_target} is not a pickaxe:
+            send "{@prefix} &cThe player must have a pickaxe in his hand." to player
+            stop
+        if lore of tool of {_target} contains formatted "{@nameEnchant}":
+            send "{@prefix} &cThat peak already has a PEAK." to player
+            stop
+        set {_pick} to tool of {_target}
+        add formatted "{@nameEnchant}" to lore of {_pick}
+        if {@useCustomModelData} is true:
+            set custom model data of {_pick} to {@customModelDataID}
+        set tool of {_target} to air
+        playEnchantScene({_target}, {_pick})
+        send "{@prefix} &aScene executed for %{_target}%." to player
+# FUNCTION PEAK
 function isPeakPick(p: player) :: boolean:
     if tool of {_p} is air:
         return false
     if tool of {_p} is not a pickaxe:
         return false
-    if lore of tool of {_p} doesn't contain "{@nameEnchant}":
+    if lore of tool of {_p} doesn't contain formatted "{@nameEnchant}":
         return false
     return true
+# LOAD SCENE
+on load:
+    if {@scene} is true:
+        set {scene_enabled} to true
+    else:
+        set {scene_enabled} to false
+# FUNCTION SCENE
+function playEnchantScene(p: player, result: item):
+    if {scene_enabled} is false:
+        stop
+    set {_loc} to location of {_p}
+    set {_cx} to x-coordinate of {_loc}
+    set {_cy} to y-coordinate of {_loc}
+    set {_cz} to z-coordinate of {_loc}
+    set {_w} to world of {_loc}
+    set walk speed of {_p} to 0
+    set {p3e_freeze::%uuid of {_p}%} to true
+    set {_t} to 0
+    set {_mod_count} to 0
+    loop 40 times:
+        add 1 to {_t}
+        add 1 to {_mod_count}
+        set {_h} to {_t} * 0.1
+        set {_i} to 0
+        loop 16 times:
+            add 1 to {_i}
+            set {_ang} to {_i} * 0.3926990816
+            make 1 of dust using dustOption(rgb(255, 140, 0), 1.0) at location({_cx} + (cos({_ang}) * 1.3), {_cy} + {_h}, {_cz} + (sin({_ang}) * 1.3), {_w})
+        if {_mod_count} = 5:
+            set {_mod_count} to 0
+            make 4 of dust using dustOption(rgb(255, 210, 60), 1.2) at location({_cx}, {_cy} + ({_h} * 0.5) + 1, {_cz}, {_w})
+            make 3 of dust using dustOption(rgb(255, 80, 0), 0.9) at location({_cx}, {_cy} + {_h}, {_cz}, {_w})
+        wait 1 tick
+    set {_by} to {_cy} + 4.0
+    set {_layer} to 0
+    loop 3 times:
+        add 1 to {_layer}
+        set {_r} to {_layer} * 0.65
+        set {_pi} to 0
+        loop 12 times:
+            add 1 to {_pi}
+            set {_phi} to {_pi} * 0.5235987756
+            set {_ti} to 0
+            loop 8 times:
+                add 1 to {_ti}
+                set {_theta} to {_ti} * 0.7853981634
+                make 1 of dust using dustOption(rgb(255, 140, 0), 1.2) at location({_cx} + ({_r} * sin({_theta}) * cos({_phi})), {_by} + ({_r} * cos({_theta})), {_cz} + ({_r} * sin({_theta}) * sin({_phi})), {_w})
+            wait 1 tick
+    make 50 of dust using dustOption(rgb(255, 140, 0), 1.0) at location({_cx}, {_by}, {_cz}, {_w}) with offset vector(1.2, 1.2, 1.2)
+    make 30 of dust using dustOption(rgb(255, 180, 0), 1.5) at location({_cx}, {_by}, {_cz}, {_w}) with offset vector(0.6, 0.6, 0.6)
+    play sound "ENTITY_GENERIC_EXPLODE" with volume 0.5 and pitch 1.9 at {_loc}
+    play sound "ENTITY_PLAYER_LEVELUP" with volume 1 and pitch 0.7 at {_loc}
+    wait 4 ticks
+    spawn text display at location({_cx}, {_by} + 0.6, {_cz}, {_w}):
+        set {_hd} to entity
+        set display text of entity to formatted "&6&l«OP»"
+    set {_ot} to 0
+    loop 20 times:
+        add 1 to {_ot}
+        set {_ang} to {_ot} * 0.3141592653
+        teleport {_hd} to location({_cx}, {_by} + 0.6 + (sin({_ang}) * 0.12), {_cz}, {_w})
+        make 2 of dust using dustOption(rgb(255, 140, 0), 1.0) at location({_cx} + (cos({_ang}) * 0.7), {_by} + 0.9, {_cz} + (sin({_ang}) * 0.7), {_w})
+        make 2 of dust using dustOption(rgb(255, 220, 50), 0.8) at location({_cx} + (cos({_ang}) * 0.7), {_by} + 1.1, {_cz} + (sin({_ang}) * 0.7), {_w})
+        wait 1 tick
+    spawn fake dropped item at location({_cx}, {_by} + 1.5, {_cz}, {_w}) for {_p} with id 9001 with item type of {_result}
+    set {_ft} to 0
+    loop 18 times:
+        add 1 to {_ft}
+        make 3 of dust using dustOption(rgb(255, 140, 0), 0.9) at location({_cx}, {_by} + 1.5 - ({_ft} * 0.22), {_cz}, {_w})
+        make 2 of dust using dustOption(rgb(255, 220, 50), 0.7) at location({_cx} + 0.1, {_by} + 1.46 - ({_ft} * 0.22), {_cz} + 0.1, {_w})
+        wait 1 tick
+    remove fake entities with ids 9001 for {_p}
+    give {_result} to {_p}
+    wait 3 ticks
+    kill {_hd}
+    set walk speed of {_p} to 0.2
+    delete {p3e_freeze::%uuid of {_p}%}
 # PEAK FUNCTION
 on break:
     if isPeakPick(player) is false:
@@ -119,5 +225,6 @@ on anvil prepare:
     set repair cost of event-inventory to 0
 # TABCOMPLETE
 on tab complete of "/p3e":
-    set tab completions for position 1 to "enchant", "book" and "version"
+    set tab completions for position 1 to "enchant", "book", "wiki" and "version"
 # everything for the moment
+# author lr02 thanks :3
