@@ -1,179 +1,197 @@
-# CONFIG
+# ============================================================
+# CONFIG - OPTIONS
+# ============================================================
 options:
-# INFO - Script
-    version: 2.8
+# The prefix is ​​the suffix that will be displayed after the 
+# script messages.
     prefix: &6&l[P3X3]&f>>
-# ANVIL - BOOK
-    nameEnchant: &f[&6&lOP&7] &7Peak
-    bookEnchant: true
-    nameBook: &fPeak 3x3
-# DURABILITY - BLOCKS
-    realisticDurability: false
-    blocksBlackList: bedrock
-# PARTICLES
-    showParticles: true
-# COOLDOWN - 3x3
-    enableCooldown: false
+# The "permission need" refers to the permissions required to 
+# use the commands.
+    permission-need: pe.mod
+# CHANGE: now accepts a comma-separated list (previously only 
+# a single block).
+    blocksBlackList: bedrock, barrier, end_portal_frame
+# "particles" enables particles to appear when mining with 
+# the enchantment.
+    particles: false
+# The durability setting determines whether the item wears 
+# down according to standard (*vanilla*) mechanics or the 3x3 
+# mining mechanic.
+    durability: false
+# enchantName is the lore applied to the item upon enchanting
+# (now it is purely COSMETIC; actual detection uses PDC/NBT).
+    enchantName: &6&lOP &7ᴘɪᴄᴋᴀxᴇ 3x3
+# bookEnchant allows you to use books to enchant items on an 
+# anvil. 
+    bookEnchant: true 
+# The cooldown serves to indicate that the enchantment requires 
+# a cooling-off period.
+    Cooldown: false
     peakCooldown: 5 seconds
-# WORLD - BLACKLIST
+# restrictWorlds acts as a blacklist of worlds where the 
+# enchantment is blocked.
+# CHANGE: now accepts a comma-separated LIST (previously only 
+# a single item).
     restrictWorlds: false
-    BlackListWorlds: example_world
-# CHANGE - DRILL
+    blackListWorlds: example_world
+# chanceDrill is used to define the percentage frequency of a 
+# 3x3 drill.
     chanceDrill: false
     drillChance: 25
-# CUSTOM MODEL
+# The `CustomModelData` function allows the use of custom models 
+# for items such as pickaxes and enchanted books.
     useCustomModelData: false
     customModelDataID: 1001
-# SCENE ENCHANTMENT
-    scene: false
-    anvilScene: false
-# SCRIPT
-command /p3e <text> [<player>]:
-    permission: p3e.mod
-    permission message: &4Command not allowed!.
-    usage: &4Use> /p3e <enchant|book|scene|wiki|version>
-    trigger:
-        if arg-1 is "enchant":
-            if player's tool is air:
-                send "{@prefix} &cYou must be holding an item." to player
-                stop
-            if player's tool is not a pickaxe:
-                send "{@prefix} &cYou must be holding a pickaxe." to player
-                stop
-            if lore of player's tool contains formatted "{@nameEnchant}":
-                send "{@prefix} &cThis item already has PEAK." to player
-                stop
-            add formatted "{@nameEnchant}" to lore of player's tool
-            if {@useCustomModelData} is true:
-                set custom model data of player's tool to {@customModelDataID}
-            send "{@prefix} &aPEAK enchant applied." to player
-            stop
-        if arg-1 is "book":
-            if {@bookEnchant} is false:
-                send "{@prefix} &cThe book system is disabled." to player
-                stop
-            set {_book} to enchanted book
-            set name of {_book} to formatted "{@nameBook}"
-            give {_book} to player
-            send "{@prefix} &fgiven book!" to player
-            stop
-        if arg-1 is "scene":
-            if {@scene} is false:
-                send "{@prefix} &cThe scene enchantment is disabled." to player
-                stop
-            if arg-2 is set:
-                set {_target} to arg-2
-            else:
-                set {_target} to player
-            if tool of {_target} is not a pickaxe:
-                send "{@prefix} &cThe player must have a pickaxe in hand." to player
-                stop
-            if lore of tool of {_target} contains formatted "{@nameEnchant}":
-                send "{@prefix} &cThat pickaxe already has PEAK." to player
-                stop
-            set {_pick} to tool of {_target}
-            add formatted "{@nameEnchant}" to lore of {_pick}
-            if {@useCustomModelData} is true:
-                set custom model data of {_pick} to {@customModelDataID}
-            set tool of {_target} to air
-            playEnchantScene({_target}, {_pick})
-            send "{@prefix} &aScene executed for %{_target}%." to player
-            stop
-        if arg-1 is "wiki":
-            send "{@prefix} <link:https://github.com/LR02s/Pickaxe-3x3>&6click to view wiki!" to player
-            stop
-        if arg-1 is "version":
-            send "{@prefix} &7Peak Enchant &7- &fv{@version}" to player
-            stop
-        send "&8Usage: /p3e enchant|book|scene|wiki|version"
-# FUNCTION PEAK
-function isPeakPick(p: player) :: boolean:
-    if tool of {_p} is air:
+# craftingBook allows you to craft the 3x3x3 pickaxe enchantment 
+# book.
+    craftingBook: true
+# ============================================================
+# ON LOAD - INIT
+# ============================================================
+on skript load:
+    delete {p3e::blacklist::blocks::*}
+    delete {p3e::blacklist::worlds::*}
+
+    set {_raw::*} to "{@blocksBlackList}" split at ","
+    loop {_raw::*}:
+        set {_clean} to loop-value
+        replace all " " with "" in {_clean}
+        set {_parsed} to {_clean} parsed as item type
+        if {_parsed} is set:
+            add {_parsed} to {p3e::blacklist::blocks::*}
+    set {_rawW::*} to "{@blackListWorlds}" split at ","
+    loop {_rawW::*}:
+        set {_cleanW} to loop-value
+        replace all " " with "" in {_cleanW}
+        add {_cleanW} to {p3e::blacklist::worlds::*}
+
+    registerBookRecipe()
+# ============================================================
+# FUNCTION - NBT / PERSISTENT DATA (SkBee)
+# ============================================================
+function hasPeakTag(i: item) :: boolean:
+    if {_i} is not set:
         return false
-    if tool of {_p} is not a pickaxe:
+    if string tag "p3e_peak" of nbt of {_i} is "true":
+        return true
+    return false
+
+function setPeakTag(i: item) :: item:
+    if {_i} is not set:
+        return {_i}
+    set string tag "p3e_peak" of nbt of {_i} to "true"
+    return {_i}
+# ============================================================
+# FUNCTION - APPLY ENCHANT
+# ============================================================
+function applyPeakData(i: item) :: item:
+    if {_i} is not set:
+        return {_i}
+    set {_result} to {_i}
+    add formatted "{@enchantName}" to lore of {_result}
+    set {_result} to setPeakTag({_result})
+    if {@useCustomModelData} is true:
+        set custom model data of {_result} to {@customModelDataID}
+    return {_result}
+# ============================================================
+# FUNCTION - VALIDACIÓN (with feedback, for commands)
+# ============================================================
+function isValidPickaxe(p: player) :: boolean:
+    if {_p} is not set:
         return false
-    if lore of tool of {_p} doesn't contain formatted "{@nameEnchant}":
+    if {_p}'s tool is air:
+        send "{@prefix} &cYou must be holding an item." to {_p}
+        return false
+    if {_p}'s tool is not a pickaxe:
+        send "{@prefix} &cYou must be holding a pickaxe." to {_p}
+        return false
+    if hasPeakTag({_p}'s tool) is true:
+        send "{@prefix} &cThis item already has PEAK." to {_p}
         return false
     return true
-# LOAD SCENE
-on load:
-    if {@scene} is true:
-        set {scene_enabled} to true
-    else:
-        set {scene_enabled} to false
-    if {@anvilScene} is true:
-        set {anvil_scene_enabled} to true
-    else:
-        set {anvil_scene_enabled} to false
-# FUNCTION SCENE
-function playEnchantScene(p: player, result: item):
-    if {scene_enabled} is false:
-        if {anvil_scene_enabled} is false:
-            stop
-    set {_loc} to location of {_p}
-    set {_cx} to x-coordinate of {_loc}
-    set {_cy} to y-coordinate of {_loc}
-    set {_cz} to z-coordinate of {_loc}
-    set {_w} to world of {_loc}
-    set {_t} to 0
-    loop 20 times:
-        add 1 to {_t}
-        set {_h} to {_t} * 0.2
-        set {_i} to 0
-        loop 8 times:
-            add 1 to {_i}
-            set {_ang} to {_i} * 0.7853981634
-            make 1 of dust using dustOption(rgb(255, 140, 0), 1.0) at location({_cx} + (cos({_ang} + {_t} * 0.3) * 1.2), {_cy} + {_h}, {_cz} + (sin({_ang} + {_t} * 0.3) * 1.2), {_w})
-        wait 1 tick
-    set {_by} to {_cy} + 4.0
-    loop 4 times:
-        set {_ang} to loop-integer * 1.5707963268
-        make 5 of dust using dustOption(rgb(255, 140, 0), 1.2) at location({_cx} + cos({_ang}) * 1.5, {_by}, {_cz} + sin({_ang}) * 1.5, {_w})
-        wait 1 tick
-    make 20 of dust using dustOption(rgb(255, 140, 0), 1.0) at location({_cx}, {_by}, {_cz}, {_w}) with offset vector(1.0, 1.0, 1.0)
-    play sound "ENTITY_PLAYER_LEVELUP" with volume 1 and pitch 0.7 at {_loc}
-    wait 4 ticks
-    set {_ot} to 0
-    loop 16 times:
-        add 1 to {_ot}
-        set {_ang} to {_ot} * 0.3926990816
-        make 2 of dust using dustOption(rgb(255, 140, 0), 1.0) at location({_cx} + (cos({_ang}) * 0.6), {_by} + 0.9, {_cz} + (sin({_ang}) * 0.6), {_w})
-        wait 1 tick
-    spawn fake dropped item at location({_cx}, {_by} + 1.5, {_cz}, {_w}) for {_p} with id 9001 with item type of {_result}
-    set {_ft} to 0
-    loop 12 times:
-        add 1 to {_ft}
-        make 2 of dust using dustOption(rgb(255, 140, 0), 0.9) at location({_cx}, {_by} + 1.5 - ({_ft} * 0.28), {_cz}, {_w})
-        wait 1 tick
-    remove fake entities with ids 9001 for {_p}
-    give {_result} to {_p}
-    wait 3 ticks
-# PEAK FUNCTION
-on break:
-    if isPeakPick(player) is false:
+# ============================================================
+# FUNCTION - VALID (for the event "on break")
+# ============================================================
+function hasPeak(p: player) :: boolean:
+    if {_p} is not set:
+        return false
+    if {_p}'s tool is air:
+        return false
+    if {_p}'s tool is not a pickaxe:
+        return false
+    return hasPeakTag({_p}'s tool)
+# ============================================================
+# FUNCTION - SUBCOMMANDS
+# ============================================================
+function cmdEnchant(p: player):
+    if isValidPickaxe({_p}) is false:
         stop
-    if {__p3e::%uuid of player%} is set:
+    set {_tool} to {_p}'s tool
+    set {_tool} to applyPeakData({_tool})
+    set {_p}'s tool to {_tool}
+    send "{@prefix} &aPEAK enchant applied." to {_p}
+# ============================================================
+# FUNCTION - CMDBOOK
+# ============================================================
+function cmdBook(p: player):
+    if {@bookEnchant} is false:
+        send "{@prefix} &cThe book system is disabled." to {_p}
         stop
-    set {__p3e::%uuid of player%} to true
-    if {@restrictWorlds} is true:
-        if "%world of event-block%" is "{@BlackListWorlds}":
-            delete {__p3e::%uuid of player%}
-            stop
-    if {@enableCooldown} is true:
-        if {p3e.cooldown::%player's uuid%} is set:
-            if difference between {p3e.cooldown::%player's uuid%} and now is smaller than {@peakCooldown}:
-                delete {__p3e::%uuid of player%}
-                stop
-        set {p3e.cooldown::%player's uuid%} to now
-    if {@chanceDrill} is true:
-        set {_chance} to random integer from 1 to 100
-        if {_chance} > {@drillChance}:
-            delete {__p3e::%uuid of player%}
-            stop
-    set {_bx} to x-coordinate of event-block
-    set {_by} to y-coordinate of event-block
-    set {_bz} to z-coordinate of event-block
-    set {_bw} to world of event-block
+    set {_book} to enchanted book
+    set {_book} to applyPeakData({_book})
+    give {_book} to {_p}
+    send "{@prefix} &agiven book!" to {_p}
+# ============================================================
+# FUNCTION - BLACKLISTS (worlds / blocks)
+# ============================================================
+function isBlacklistedWorld(w: world) :: boolean:
+    if {@restrictWorlds} is false:
+        return false
+    loop {p3e::blacklist::worlds::*}:
+        if "%{_w}%" is loop-value:
+            return true
+    return false
+
+function isBlacklistedBlock(b: block) :: boolean:
+    loop {p3e::blacklist::blocks::*}:
+        if {_b} is loop-value:
+            return true
+    return false
+# ============================================================
+# FUNCTION - COOLDOWN
+# ============================================================
+function checkCooldown(p: player) :: boolean:
+    if {@Cooldown} is false:
+        return true
+    if {p3e::cooldown::%{_p}'s uuid%} is set:
+        if difference between {p3e::cooldown::%{_p}'s uuid%} and now is smaller than {@peakCooldown}:
+            return false
+    set {p3e::cooldown::%{_p}'s uuid%} to now
+    return true
+# ============================================================
+# FUNCTION - BREAK BLOCK (compatibility with Fortune/Silk Touch/Unbreaking)
+# ============================================================
+function breakBlock(p: player, loc: location):
+    set {_block} to block at {_loc}
+    if {_block} is air:
+        stop
+    if isBlacklistedBlock({_block}) is true:
+        stop
+    if {@particles} is true:
+        make 5 of dust using dustOption(rgb(255, 140, 0), 0.8) at {_loc}
+    break {_block} naturally using {_p}'s tool
+    if {@durability} is true:
+        if {_p}'s tool is not air:
+            damage {_p}'s tool by 1
+
+# ============================================================
+# FUNCTION - 3x3x3 PEAK (cube)
+# ============================================================
+function break3x3(p: player, center: location):
+    set {_bx} to x-coordinate of {_center}
+    set {_by} to y-coordinate of {_center}
+    set {_bz} to z-coordinate of {_center}
+    set {_bw} to world of {_center}
     loop integers from -1 to 1:
         set {_dx} to loop-integer
         loop integers from -1 to 1:
@@ -184,55 +202,82 @@ on break:
                     if {_dy} is 0:
                         if {_dz} is 0:
                             continue
+                set {_loc} to location({_bx} + {_dx}, {_by} + {_dy}, {_bz} + {_dz}, {_bw})
+                breakBlock({_p}, {_loc})
+                if {_p}'s tool is air:
+                    stop
+# ============================================================
+# FUNCTION - CRAFTING
+# ============================================================
+function registerBookRecipe():
+    if {@bookEnchant} is false:
+        stop
+    if {@craftingBook} is false:
+        stop
+    set {_book} to enchanted book
+    set {_book} to applyPeakData({_book})
+    register new shaped recipe for {_book} using emerald, air, emerald, air, book, air, emerald, air and emerald with id "pick_book"
+# ============================================================
+# EVENT - BREAK
+# ============================================================
+on break:
+    if event is cancelled:
+        stop
+    if hasPeak(player) is false:
+        stop
+    if {p3e::lock::%uuid of player%} is set:
+        stop
+    set {p3e::lock::%uuid of player%} to true
 
-                set {_ploc} to location({_bx} + {_dx}, {_by} + {_dy}, {_bz} + {_dz}, {_bw})
-                set {_target} to block at {_ploc}
-                if {_target} is not air:
-                    if {_target} is {@blocksBlackList}:
-                        continue
+    if isBlacklistedWorld(world of event-block) is true:
+        delete {p3e::lock::%uuid of player%}
+        stop
+    if checkCooldown(player) is false:
+        delete {p3e::lock::%uuid of player%}
+        stop
+    if {@chanceDrill} is true:
+        if (random integer from 1 to 100) > {@drillChance}:
+            delete {p3e::lock::%uuid of player%}
+            stop
 
-                    if {@showParticles} is true:
-                        make 5 of dust using dustOption(rgb(255, 140, 0), 0.8) at {_ploc}
-                    break {_target} naturally using player's tool
-                    if {@realisticDurability} is true:
-                        remove 1 from durability of player's tool
-    delete {__p3e::%uuid of player%}
+    break3x3(player, location of event-block)
+    delete {p3e::lock::%uuid of player%}
+# ============================================================
+# COMMANDS - CONFIG
+# ============================================================
+command /pe <text>:
+    permission: {@permission-need}
+    permission message: &cCommand not allowed!
+    usage: &cUse> /pe <enchant|book|wiki>
+    trigger:
+        if arg-1 is "enchant":
+            cmdEnchant(player)
+            stop
+        if arg-1 is "book":
+            cmdBook(player)
+            stop
+        if arg-1 is "wiki":
+            send "{@prefix} <link:https://github.com/LR02s/Pickaxe-3x3>&6click to view wiki!" to player
+            stop
+        send "&8Usage: /pe enchant|book|wiki"
+# ============================================================
+# TABCOMPLETE
+# ============================================================
+on tab complete of "/pe":
+    set tab completions for position 1 to "enchant", "book" and "wiki"
+# ============================================================
 # ANVIL - SYSTEM
+# ============================================================
 on anvil prepare:
     if {@bookEnchant} is false:
         stop
     if slot 0 of event-inventory is not a pickaxe:
         stop
-    if name of slot 1 of event-inventory is not formatted "{@nameBook}":
+    if hasPeakTag(slot 1 of event-inventory) is false:
         stop
-    if lore of slot 0 of event-inventory contains formatted "{@nameEnchant}":
+    if hasPeakTag(slot 0 of event-inventory) is true:
         stop
     set {_result} to slot 0 of event-inventory
-    add formatted "{@nameEnchant}" to lore of {_result}
-    if {@useCustomModelData} is true:
-        set custom model data of {_result} to {@customModelDataID}
+    set {_result} to applyPeakData({_result})
     set event-slot to {_result}
     set repair cost of event-inventory to 0
-on inventory click:
-    if event-inventory is not an anvil inventory:
-        stop
-    if clicked slot is not 2:
-        stop
-    if {@anvilScene} is false:
-        stop
-    set {_item} to slot 2 of event-inventory
-    if {_item} is air:
-        stop
-    if lore of {_item} doesn't contain formatted "{@nameEnchant}":
-        stop
-    cancel event
-    set slot 2 of event-inventory to air
-    set slot 0 of event-inventory to air
-    set slot 1 of event-inventory to air
-    close inventory of player
-    playEnchantScene(player, {_item})
-# TABCOMPLETE
-on tab complete of "/p3e":
-    set tab completions for position 1 to "enchant", "book", "scene", "wiki" and "version"
-# everything for the moment
-# author lr02 thanks :3
