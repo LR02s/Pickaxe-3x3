@@ -42,7 +42,7 @@ options:
 # for items such as pickaxes and enchanted books.
     useCustomModelData: false
     customModelDataID: 1001
-# craftingBook allows you to craft the 3x3x3 pickaxe enchantment 
+# craftingBook allows you to craft the 3x3 pickaxe enchantment 
 # book.
     craftingBook: true
 # ============================================================
@@ -176,6 +176,8 @@ function breakBlock(p: player, loc: location):
     if {_block} is air:
         stop
     if isBlacklistedBlock({_block}) is true:
+        stop
+    if {_p} can't build at {_loc}:
         stop
     if {@particles} is true:
         make 5 of dust using dustOption(rgb(255, 140, 0), 0.8) at {_loc}
