@@ -177,8 +177,6 @@ function breakBlock(p: player, loc: location):
         stop
     if isBlacklistedBlock({_block}) is true:
         stop
-    if {_p} can't build at {_loc}:
-        stop
     if {@particles} is true:
         make 5 of dust using dustOption(rgb(255, 140, 0), 0.8) at {_loc}
     break {_block} naturally using {_p}'s tool
