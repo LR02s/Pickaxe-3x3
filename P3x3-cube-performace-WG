@@ -1,0 +1,156 @@
+# ============================================================
+# CONFIG - OPTIONS
+# ============================================================
+options:
+    prefix: &6&l[P3X3]&f>>
+    permission-need: pe.mod
+    blocksBlackList: bedrock
+    enchantName: &7Pickaxe 3x3
+# ============================================================
+# ON LOAD - INIT
+# ============================================================
+on skript load:
+    delete {p3e::blacklist::blocks::*}
+
+    set {_raw::*} to "{@blocksBlackList}" split at ","
+    loop {_raw::*}:
+        set {_clean} to loop-value
+        replace all " " with "" in {_clean}
+        set {_parsed} to {_clean} parsed as item type
+        if {_parsed} is set:
+            add {_parsed} to {p3e::blacklist::blocks::*}
+# ============================================================
+# FUNCTION - NBT / PERSISTENT DATA (SkBee)
+# ============================================================
+function hasPeakTag(i: item) :: boolean:
+    if {_i} is not set:
+        return false
+    if string tag "p3e_peak" of nbt of {_i} is "true":
+        return true
+    return false
+
+function setPeakTag(i: item) :: item:
+    if {_i} is not set:
+        return {_i}
+    set string tag "p3e_peak" of nbt of {_i} to "true"
+    return {_i}
+# ============================================================
+# FUNCTION - APPLY ENCHANT
+# ============================================================
+function applyPeakData(i: item) :: item:
+    if {_i} is not set:
+        return {_i}
+    set {_result} to {_i}
+    add formatted "{@enchantName}" to lore of {_result}
+    set {_result} to setPeakTag({_result})
+    return {_result}
+# ============================================================
+# FUNCTION - VALIDATION (with feedback, for commands)
+# ============================================================
+function isValidPickaxe(p: player) :: boolean:
+    if {_p} is not set:
+        return false
+    if {_p}'s tool is air:
+        send "{@prefix} &cYou must be holding an item." to {_p}
+        return false
+    if {_p}'s tool is not a pickaxe:
+        send "{@prefix} &cYou must be holding a pickaxe." to {_p}
+        return false
+    if hasPeakTag({_p}'s tool) is true:
+        send "{@prefix} &cThis item already has PEAK." to {_p}
+        return false
+    return true
+# ============================================================
+# FUNCTION - VALID (for the "on break" event)
+# ============================================================
+function hasPeak(p: player) :: boolean:
+    if {_p} is not set:
+        return false
+    if {_p}'s tool is air:
+        return false
+    if {_p}'s tool is not a pickaxe:
+        return false
+    return hasPeakTag({_p}'s tool)
+# ============================================================
+# FUNCTION - SUBCOMMAND
+# ============================================================
+function cmdEnchant(p: player):
+    if isValidPickaxe({_p}) is false:
+        stop
+    set {_tool} to {_p}'s tool
+    set {_tool} to applyPeakData({_tool})
+    set {_p}'s tool to {_tool}
+    send "{@prefix} &aPEAK enchant applied." to {_p}
+# ============================================================
+# FUNCTION - BLOCK BLACKLIST
+# ============================================================
+function isBlacklistedBlock(b: block) :: boolean:
+    loop {p3e::blacklist::blocks::*}:
+        if {_b} is loop-value:
+            return true
+    return false
+# ============================================================
+# FUNCTION - BREAK BLOCK (compatibility with Fortune/Silk Touch + WorldGuard)
+# ============================================================
+function breakBlock(p: player, loc: location):
+    set {_block} to block at {_loc}
+    if {_block} is air:
+        stop
+    if isBlacklistedBlock({_block}) is true:
+        stop
+    if {_p} can't build at {_loc}:
+        stop
+    break {_block} naturally using {_p}'s tool
+# ============================================================
+# FUNCTION - 3x3x3 PEAK (cube)
+# ============================================================
+function break3x3(p: player, center: location):
+    set {_bx} to x-coordinate of {_center}
+    set {_by} to y-coordinate of {_center}
+    set {_bz} to z-coordinate of {_center}
+    set {_bw} to world of {_center}
+    loop integers from -1 to 1:
+        set {_dx} to loop-integer
+        loop integers from -1 to 1:
+            set {_dy} to loop-integer-2
+            loop integers from -1 to 1:
+                set {_dz} to loop-integer-3
+                if {_dx} is 0:
+                    if {_dy} is 0:
+                        if {_dz} is 0:
+                            continue
+                set {_loc} to location({_bx} + {_dx}, {_by} + {_dy}, {_bz} + {_dz}, {_bw})
+                breakBlock({_p}, {_loc})
+                if {_p}'s tool is air:
+                    stop
+# ============================================================
+# EVENT - BREAK
+# ============================================================
+on break:
+    if event is cancelled:
+        stop
+    if hasPeak(player) is false:
+        stop
+    if {p3e::lock::%uuid of player%} is set:
+        stop
+    set {p3e::lock::%uuid of player%} to true
+
+    break3x3(player, location of event-block)
+    delete {p3e::lock::%uuid of player%}
+# ============================================================
+# COMMANDS
+# ============================================================
+command /pe <text>:
+    permission: {@permission-need}
+    permission message: &cCommand not allowed!
+    usage: &cUse> /pe <enchant>
+    trigger:
+        if arg-1 is "enchant":
+            cmdEnchant(player)
+            stop
+        send "&8Usage: /pe enchant"
+# ============================================================
+# TABCOMPLETE
+# ============================================================
+on tab complete of "/pe":
+    set tab completions for position 1 to "enchant"
