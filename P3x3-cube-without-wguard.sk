@@ -10,7 +10,7 @@ options:
     permission-need: pe.mod
 # CHANGE: now accepts a comma-separated list (previously only 
 # a single block).
-    blocksBlackList: bedrock, barrier, end_portal_frame
+    blocksBlackList: bedrock
 # "particles" enables particles to appear when mining with 
 # the enchantment.
     particles: false
