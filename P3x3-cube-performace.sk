@@ -138,17 +138,8 @@ on break:
 # ============================================================
 # COMMANDS
 # ============================================================
-command /pe <text>:
+command /pickaxe:
     permission: {@permission-need}
     permission message: &cCommand not allowed!
-    usage: &cUse> /pe <enchant>
     trigger:
-        if arg-1 is "enchant":
-            cmdEnchant(player)
-            stop
-        send "&8Usage: /pe enchant"
-# ============================================================
-# TABCOMPLETE
-# ============================================================
-on tab complete of "/pe":
-    set tab completions for position 1 to "enchant"
+        cmdEnchant(player)
